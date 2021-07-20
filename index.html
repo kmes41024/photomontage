@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Picture</title>
+	<style>
+	img 
+	{
+		border: solid 1px #ddd;
+	}
+	</style>
+</head>
+<body>
+    <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+	<table>
+		<tr>
+			<td>
+				<h2>模拟分享数据来源</h2>
+				<div id="chart1" style="width:400px;height:400px;"></div>
+			</td>
+			<td>
+				<h2>背景图片(缩小显示)</h2>
+				<img src="images/bg.png" style="height:400px;width:auto"></div>
+			</td>
+		</tr>
+    </table>
+	<BR/>
+	<img id="viewimg" src="" style="display:none" />	
+	<input type="button" value="一键合成" onclick="hecheng()" />
+	<BR/>
+	<table style="margin-top:50px">
+		<tr>
+			<td valign="top">
+				<div id="imgBox" align="center"></div>
+			</td>
+			<td valign="top">
+				<div style="padding-left:150px;text-align:center">
+					<label id="qrcodeText" align="center"></label><br><br>
+					<div id="qrcode" align="center"></div>
+				</div>
+			</td>
+		</tr>
+	</table>
+</div>
+</body>
+	<script src="http://cdn.bootcss.com/echarts/3.2.3/echarts.min.js"></script>
+	<script src="js/jquery-2.1.1.min.js"></script>
+	<script src="js/html2canvas.js"></script>
+	<script src="js/qrcode.js"></script>
+	<script>
+	// 基于准备好的dom，初始化echarts实例
+	var myChart = echarts.init(document.getElementById('chart1'));
+	var data = ['img/bg.png', 'img/01.jpg'];
+	var base64 = [];
+	
+	// 指定图表的配置项和数据
+	myChart.setOption({
+		series : [
+			{
+				name: '访问来源',
+				type: 'pie',
+				radius: '55%',
+				data:[
+					{value:400, name:'搜索引擎'},
+					{value:335, name:'直接访问'},
+					{value:310, name:'邮件营销'},
+					{value:274, name:'联盟广告'},
+					{value:235, name:'视频广告'}
+				]
+			}
+		]
+	})
+
+
+	function hecheng()
+	{
+		html2canvas( $("#chart1") ,{      
+			onrendered: function(canvas){
+			var html_canvas = canvas.toDataURL("img/png", 1.0);
+			$("#viewimg").prop('src',html_canvas);
+			base64.push(canvas.toDataURL("img/png", 1.0));
+			uploadImage(base64[0]);
+		  }
+		});
+	}
+
+	function uploadImage(imgBase64)
+	{
+		$.ajax({
+			url: "ajaxUploadImage.php",
+			dataType: "json",
+			data: {'base64':imgBase64},
+			type: "post",
+			cache: false,
+			success: function (msg) {
+				console.log(msg.url);
+				document.getElementById('imgBox').innerHTML = '<p style="padding:10px 0">合成图片成功！</p><img src="' + msg.url + '">';
+				////此处加入产生根据msg.url产生qrcode并显示/////
+				document.getElementById('qrcodeText').innerHTML = '服务器端存放档案URL: '+msg.export+ '<BR/>分享图片二维码';
+				
+				var qrcode = new QRCode(document.getElementById("qrcode"), {
+					width : 250,
+					height : 250
+				});
+				document.getElementById("qrcode").src = qrcode.makeCode(msg.export);
+			},
+		});
+			
+	}
+	</script>
+</html>
